@@ -50,12 +50,10 @@ namespace Bukimedia.PrestaSharp.Factories
 
         private RestClient CreateClient()
         {
-            var options = new RestClientOptions(BaseUrl)
-            {
-                MaxTimeout = -1
-            };
+            var options = new RestClientOptions(BaseUrl);
+            var serializer = new PrestaSharpSerializer();
             var client = new RestClient(options, configureSerialization: s => s
-                .UseSerializer(() => new PrestaSharpDeserializer()));
+                .UseSerializer(() => serializer));
             return client;
         }
 

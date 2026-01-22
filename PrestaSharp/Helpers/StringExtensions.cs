@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using System.Xml.Linq;
 
-namespace RestSharp.Extensions
+namespace Bukimedia.PrestaSharp.Helpers
 {
     /// <summary>
     /// Extension methods for strings to replace removed RestSharp functionality

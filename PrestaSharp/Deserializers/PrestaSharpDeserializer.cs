@@ -1,6 +1,7 @@
 ﻿using RestSharp;
 using RestSharp.Extensions;
 using RestSharp.Serializers;
+using Bukimedia.PrestaSharp.Helpers;
 using System;
 using System.Collections;
 using System.Collections.Generic;

@@ -6,6 +6,7 @@ using System.Xml.Linq;
 using RestSharp;
 using RestSharp.Extensions;
 using RestSharp.Serializers;
+using Bukimedia.PrestaSharp.Helpers;
 
 namespace Bukimedia.PrestaSharp.Serializers
 {
@@ -13,6 +14,7 @@ namespace Bukimedia.PrestaSharp.Serializers
     {
         public string Namespace { get; set; }
         public string RootElement { get; set; }
+        public string DateFormatString { get; set; }  // Custom date format string
         public RestSharp.ContentType ContentType { get; set; } = RestSharp.ContentType.Xml;
 
         // ISerializer implementation
@@ -23,7 +25,10 @@ namespace Bukimedia.PrestaSharp.Serializers
         public IDeserializer Deserializer => new Deserializers.PrestaSharpDeserializer();
         public string[] AcceptedContentTypes => new[] { "application/xml", "text/xml" };
         public SupportsContentType SupportsContentType => contentType => 
-            AcceptedContentTypes.Any(ct => contentType.Contains(ct, StringComparison.OrdinalIgnoreCase));
+        {
+            var contentTypeString = contentType.ToString();
+            return AcceptedContentTypes.Any(ct => contentTypeString.IndexOf(ct, StringComparison.OrdinalIgnoreCase) >= 0);
+        };
         public DataFormat DataFormat => DataFormat.Xml;
         
         public string Serialize(Parameter parameter) => parameter.Value == null ? string.Empty : Serialize(parameter.Value);
@@ -167,9 +172,9 @@ namespace Bukimedia.PrestaSharp.Serializers
         {
             var output = obj;
 
-            if (obj is DateTime && DateFormat.HasValue())
+            if (obj is DateTime && !string.IsNullOrEmpty(DateFormatString))
             {
-                output = ((DateTime)obj).ToString(DateFormat);
+                output = ((DateTime)obj).ToString(DateFormatString);
             }
             else if (obj is bool)
             {

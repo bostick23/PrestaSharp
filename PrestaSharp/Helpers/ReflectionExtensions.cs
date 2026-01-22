@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-namespace RestSharp.Extensions
+namespace Bukimedia.PrestaSharp.Helpers
 {
     /// <summary>
     /// Extension methods for reflection to replace removed RestSharp functionality
