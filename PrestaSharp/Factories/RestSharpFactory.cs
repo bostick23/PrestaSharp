@@ -248,7 +248,7 @@ namespace Bukimedia.PrestaSharp.Factories
                 Resource = resource,
                 Method = Method.Put
             };
-            request.AddUrlSegment("id", id.ToString());
+            request.AddUrlSegment("id", id.Value.ToString());
             AddBody(request, prestashopEntity);
             return request;
         }

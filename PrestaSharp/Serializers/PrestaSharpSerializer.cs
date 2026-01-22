@@ -31,7 +31,7 @@ namespace Bukimedia.PrestaSharp.Serializers
         };
         public DataFormat DataFormat => DataFormat.Xml;
         
-        public string Serialize(Parameter parameter) => parameter.Value == null ? string.Empty : Serialize(parameter.Value);
+        public string Serialize(Parameter parameter) => parameter.Value == null ? string.Empty : PrestaSharpSerialize(parameter.Value);
 
         public PrestaSharpSerializer()
         {
