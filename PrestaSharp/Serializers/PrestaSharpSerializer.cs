@@ -1,22 +1,45 @@
 ﻿using System;
 using System.Collections;
 using System.Linq;
+using System.Reflection;
 using System.Xml.Linq;
+using RestSharp;
 using RestSharp.Extensions;
 using RestSharp.Serializers;
+using Bukimedia.PrestaSharp.Helpers;
 
 namespace Bukimedia.PrestaSharp.Serializers
 {
-    class PrestaSharpSerializer : XmlSerializer
+    public class PrestaSharpSerializer : ISerializer, IRestSerializer
     {
+        public string Namespace { get; set; }
+        public string RootElement { get; set; }
+        public string DateFormatString { get; set; }  // Custom date format string
+        public RestSharp.ContentType ContentType { get; set; } = RestSharp.ContentType.Xml;
+
+        // ISerializer implementation
+        public string Serialize(object obj) => PrestaSharpSerialize(obj);
+
+        // IRestSerializer implementation
+        public ISerializer Serializer => this;
+        public IDeserializer Deserializer => new Deserializers.PrestaSharpDeserializer();
+        public string[] AcceptedContentTypes => new[] { "application/xml", "text/xml" };
+        public SupportsContentType SupportsContentType => contentType => 
+        {
+            var contentTypeString = contentType.ToString();
+            return AcceptedContentTypes.Any(ct => contentTypeString.IndexOf(ct, StringComparison.OrdinalIgnoreCase) >= 0);
+        };
+        public DataFormat DataFormat => DataFormat.Xml;
+        
+        public string Serialize(Parameter parameter) => parameter.Value == null ? string.Empty : PrestaSharpSerialize(parameter.Value);
+
         public PrestaSharpSerializer()
-            : base()
         {
         }
 
         public PrestaSharpSerializer(string @namespace)
-            : base(@namespace)
         {
+            Namespace = @namespace;
         }
 
         /// <summary>
@@ -31,12 +54,6 @@ namespace Bukimedia.PrestaSharp.Serializers
             var t = obj.GetType();
             var name = t.Name;
 
-            var options = t.GetAttribute<SerializeAsAttribute>();
-            if (options != null)
-            {
-                name = options.TransformName(options.Name ?? name);
-            }
-
             var root = new XElement(name.AsNamespaced(Namespace));
 
             if (obj is IList)
@@ -45,11 +62,6 @@ namespace Bukimedia.PrestaSharp.Serializers
                 foreach (var item in (IList)obj)
                 {
                     var type = item.GetType();
-                    var opts = type.GetAttribute<SerializeAsAttribute>();
-                    if (opts != null)
-                    {
-                        itemTypeName = opts.TransformName(opts.Name ?? name);
-                    }
                     if (itemTypeName == "")
                     {
                         itemTypeName = type.Name;
@@ -80,12 +92,8 @@ namespace Bukimedia.PrestaSharp.Serializers
             var objType = obj.GetType();
 
             var props = from p in objType.GetProperties()
-                        let indexAttribute = p.GetAttribute<SerializeAsAttribute>()
                         where p.CanRead && p.CanWrite
-                        orderby indexAttribute == null ? int.MaxValue : indexAttribute.Index
                         select p;
-
-            var globalOptions = objType.GetAttribute<SerializeAsAttribute>();
 
             foreach (var prop in props)
             {
@@ -116,21 +124,11 @@ namespace Bukimedia.PrestaSharp.Serializers
                 var propType = prop.PropertyType;
 
                 var useAttribute = false;
-                var settings = prop.GetAttribute<SerializeAsAttribute>();
-                if (settings != null)
+                // Check for XmlElement attribute to get custom element name
+                var xmlElementAttr = prop.GetCustomAttribute<System.Xml.Serialization.XmlElementAttribute>();
+                if (xmlElementAttr != null && !string.IsNullOrEmpty(xmlElementAttr.ElementName))
                 {
-                    name = settings.Name.HasValue() ? settings.Name : name;
-                    useAttribute = settings.Attribute;
-                }
-
-                var options = prop.GetAttribute<SerializeAsAttribute>();
-                if (options != null)
-                {
-                    name = options.TransformName(name);
-                }
-                else if (globalOptions != null)
-                {
-                    name = globalOptions.TransformName(name);
+                    name = xmlElementAttr.ElementName;
                 }
 
                 var nsName = name.AsNamespaced(Namespace);
@@ -154,10 +152,7 @@ namespace Bukimedia.PrestaSharp.Serializers
                         if (itemTypeName == "")
                         {
                             var type = item.GetType();
-                            var setting = type.GetAttribute<SerializeAsAttribute>();
-                            itemTypeName = setting != null && setting.Name.HasValue()
-                                    ? setting.Name
-                                    : type.Name;
+                            itemTypeName = type.Name;
                         }
                         var instance = new XElement(itemTypeName);
                         Map(instance, item);
@@ -177,9 +172,9 @@ namespace Bukimedia.PrestaSharp.Serializers
         {
             var output = obj;
 
-            if (obj is DateTime && DateFormat.HasValue())
+            if (obj is DateTime && !string.IsNullOrEmpty(DateFormatString))
             {
-                output = ((DateTime)obj).ToString(DateFormat);
+                output = ((DateTime)obj).ToString(DateFormatString);
             }
             else if (obj is bool)
             {

@@ -1,6 +1,7 @@
 ﻿using RestSharp;
 using RestSharp.Extensions;
-using RestSharp.Serialization.Xml;
+using RestSharp.Serializers;
+using Bukimedia.PrestaSharp.Helpers;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ using System.Xml.Linq;
 
 namespace Bukimedia.PrestaSharp.Deserializers
 {
-    public class PrestaSharpDeserializer : IXmlDeserializer
+    public class PrestaSharpDeserializer : IDeserializer
     {
         //RootElement comes from RestSharp. It's value is taken from Request.RootElement
         public string RootElement { get; set; }
@@ -26,7 +27,7 @@ namespace Bukimedia.PrestaSharp.Deserializers
             Culture = CultureInfo.InvariantCulture;
         }
 
-        public virtual T Deserialize<T>(IRestResponse response)
+        public virtual T Deserialize<T>(RestResponse response)
         {
             if (string.IsNullOrEmpty(response.Content))
                 return default(T);
